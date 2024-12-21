@@ -61,4 +61,12 @@ export class MathUtils {
         const validElements = arr.filter(item => item !== null && item !== undefined).length;
         return validElements;
     }
+
+    /**
+     * 计算数组中非空元素的百分比
+     */
+    static getArrayCoveragePercentage(arr: any[]): number {
+        const validElements = this.getArrayCoverage(arr);
+        return (validElements / arr.length) * 100;
+    }
 } 
