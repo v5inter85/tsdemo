@@ -49,4 +49,16 @@ export class MathUtils {
         }
         return Math.min(...numbers);
     }
+
+    /**
+     * Calculate array coverage (percentage of non-empty/non-null elements)
+     * @param arr Input array
+     * @returns Coverage percentage (0-100)
+     */
+    static getArrayCoverage<T>(arr: T[]): number {
+        if (!arr || arr.length === 0) return 0;
+        
+        const validElements = arr.filter(item => item !== null && item !== undefined).length;
+        return validElements;
+    }
 } 

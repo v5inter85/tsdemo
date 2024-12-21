@@ -6,8 +6,8 @@ export class Patterns {
      * 单例模式
      */
     static Singleton = class {
-        private static instance: any;
-        protected constructor() {}
+        static instance: any;
+        private constructor() {}
 
         static getInstance(): any {
             if (!this.instance) {
@@ -21,7 +21,7 @@ export class Patterns {
      * 观察者模式
      */
     static Observer = class<T> {
-        private observers: ((data: T) => void)[] = [];
+        public observers: ((data: T) => void)[] = [];
 
         subscribe(fn: (data: T) => void): () => void {
             this.observers.push(fn);
