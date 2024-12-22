@@ -69,4 +69,24 @@ export class MathUtils {
         const validElements = this.getArrayCoverage(arr);
         return (validElements / arr.length) * 100;
     }
+
+    /**
+     * Check if a number is prime
+     * @param num Number to check
+     * @returns True if the number is prime, false otherwise
+     */
+    static isPrime(num: number): boolean {
+        // Handle special cases
+        if (num <= 1) return false;
+        if (num === 2) return true;
+        if (num % 2 === 0) return false;
+
+        // Check odd divisors up to square root
+        const sqrt = Math.sqrt(num);
+        for (let i = 3; i <= sqrt; i += 2) {
+            if (num % i === 0) return false;
+        }
+        
+        return true;
+    }
 } 
