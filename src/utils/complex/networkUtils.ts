@@ -2,8 +2,44 @@
  * 复杂网络请求工具类
  */
 export class NetworkUtils {
+    // Add cache size limit
+    private static readonly MAX_CACHE_SIZE = 100;
+    private static readonly DEFAULT_CACHE_DURATION = 5000;
+    
     private static cache = new Map<string, { data: any; timestamp: number }>();
     private static pendingRequests = new Map<string, Promise<any>>();
+
+    /**
+     * Generate cache key with better performance
+     */
+    private static generateCacheKey(url: string, method: string, body?: any): string {
+        const bodyHash = body ? this.hashCode(JSON.stringify(body)) : '';
+        return `${method}-${url}-${bodyHash}`;
+    }
+
+    /**
+     * Simple but effective string hash function
+     */
+    private static hashCode(str: string): number {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash = hash & hash;
+        }
+        return hash;
+    }
+
+    /**
+     * Clean expired cache entries
+     */
+    private static cleanCache(cacheDuration: number): void {
+        const now = Date.now();
+        for (const [key, value] of this.cache) {
+            if (now - value.timestamp > cacheDuration) {
+                this.cache.delete(key);
+            }
+        }
+    }
 
     /**
      * 带缓存的请求
@@ -18,23 +54,35 @@ export class NetworkUtils {
             forceRefresh?: boolean;
         } = {}
     ): Promise<T> {
-        const cacheKey = `${options.method || 'GET'}-${url}-${JSON.stringify(options.body || {})}`;
-        const cached = this.cache.get(cacheKey);
+        const method = options.method || 'GET';
+        const cacheDuration = options.cacheDuration || this.DEFAULT_CACHE_DURATION;
+        
+        // More efficient cache key generation
+        const cacheKey = this.generateCacheKey(url, method, options.body);
 
-        if (!options.forceRefresh && cached && 
-            Date.now() - cached.timestamp < (options.cacheDuration || 5000)) {
+        // Check and clean cache periodically
+        if (this.cache.size > this.MAX_CACHE_SIZE) {
+            this.cleanCache(cacheDuration);
+        }
+
+        const cached = this.cache.get(cacheKey);
+        if (!options.forceRefresh && cached && Date.now() - cached.timestamp < cacheDuration) {
             return cached.data;
         }
 
-        // 防止重复请求
-        if (this.pendingRequests.has(cacheKey)) {
-            return this.pendingRequests.get(cacheKey);
+        // Reuse pending request if exists
+        const pendingRequest = this.pendingRequests.get(cacheKey);
+        if (pendingRequest) {
+            return pendingRequest;
         }
 
+        // Stringify body once
+        const bodyString = options.body ? JSON.stringify(options.body) : undefined;
+
         const promise = fetch(url, {
-            method: options.method || 'GET',
+            method,
             headers: options.headers,
-            body: options.body ? JSON.stringify(options.body) : undefined
+            body: bodyString
         })
         .then(res => {
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
